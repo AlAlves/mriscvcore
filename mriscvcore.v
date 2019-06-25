@@ -10,14 +10,14 @@ This is the definitive core.
 module mriscvcore(
     input clk,
     input rstn,
-    
+
     // AXI-4 LITE INTERFACE
     input [31:0] Rdata,
     input ARready,
     input Rvalid,
     input AWready,
     input Wready,
-    input Bvalid, 
+    input Bvalid,
     output [31:0] AWdata,
     output [31:0] ARdata,
     output [31:0] Wdata,
@@ -28,15 +28,48 @@ module mriscvcore(
     output [2:0] ARprot,AWprot,
     output Bready,
     output [3:0] Wstrb,
-    
+
+    `ifdef RISCV_FORMAL
+    	output reg        rvfi_valid,
+    	output reg [63:0] rvfi_order,
+    	output reg [31:0] rvfi_insn,
+    	output reg        rvfi_trap,
+    	output reg        rvfi_halt,
+    	output reg        rvfi_intr,
+    	output reg [ 1:0] rvfi_mode,
+    	output reg [ 4:0] rvfi_rs1_addr,
+    	output reg [ 4:0] rvfi_rs2_addr,
+    	output reg [31:0] rvfi_rs1_rdata,
+    	output reg [31:0] rvfi_rs2_rdata,
+    	output reg [ 4:0] rvfi_rd_addr,
+    	output reg [31:0] rvfi_rd_wdata,
+    	output reg [31:0] rvfi_pc_rdata,
+    	output reg [31:0] rvfi_pc_wdata,
+    	output reg [31:0] rvfi_mem_addr,
+    	output reg [ 3:0] rvfi_mem_rmask,
+    	output reg [ 3:0] rvfi_mem_wmask,
+    	output reg [31:0] rvfi_mem_rdata,
+    	output reg [31:0] rvfi_mem_wdata,
+
+    	// output reg [63:0] rvfi_csr_mcycle_rmask,
+    	// output reg [63:0] rvfi_csr_mcycle_wmask,
+    	// output reg [63:0] rvfi_csr_mcycle_rdata,
+    	// output reg [63:0] rvfi_csr_mcycle_wdata,
+        //
+    	// output reg [63:0] rvfi_csr_minstret_rmask,
+    	// output reg [63:0] rvfi_csr_minstret_wmask,
+    	// output reg [63:0] rvfi_csr_minstret_rdata,
+    	// output reg [63:0] rvfi_csr_minstret_wdata,
+    `endif
+
     // IRQ interface
-    
+
     input [31:0] inirr,
     output [31:0] outirr,
     output trap
-     
+
     );
-    
+
 // SIGNAL DECLARATION     *********************************************************
 
 // Data Buses
@@ -55,7 +88,7 @@ wire is_rd_mem;
 wire [1:0] W_R_mem, wordsize_mem;
 wire sign_mem, en_mem, busy_mem, done_mem, align_mem;
 //SIGNALS DECO INST
-wire enableDec;    
+wire enableDec;
 //SIGNALS MULT
 wire enable_mul, done_mul, is_inst_mul;
 //SIGNALS ALU
@@ -75,7 +108,7 @@ MEMORY_INTERFACE MEMORY_INTERFACE_inst(
     .rs1(rs1),
     .rs2(rs2),
     .rd(rd),
-    .imm(imm), 
+    .imm(imm),
     .pc(pc),
     .rd_en(is_rd_mem),
     // AXI4-Interface
@@ -103,7 +136,7 @@ MEMORY_INTERFACE MEMORY_INTERFACE_inst(
     .wordsize(wordsize_mem),
     .signo(sign_mem),
     .enable(en_mem),
-    .busy(busy_mem), 
+    .busy(busy_mem),
     .done(done_mem),
     .align(align_mem)
     );
@@ -134,7 +167,7 @@ REG_FILE REG_FILE_inst(
     .rs2i(rs2i)
     );
 
-    
+
 ALU ALU_inst(
     .clk(clk),
     .reset(rstn),
@@ -152,8 +185,8 @@ ALU ALU_inst(
     .is_rd(is_rd_alu),
     .is_inst(is_inst_alu)
     );
-    
-     
+
+
 IRQ IRQ_inst(
     .rst(rstn),
     .clk(clk),
@@ -212,17 +245,17 @@ FSM FSM_inst
     (
     .clk(clk),
     .reset(rstn),
-    
+
     // Auxiliars from DATAPATH
     .codif(codif),
-    
+
     // Inputs from DATAPATH
-    .busy_mem(busy_mem), 
+    .busy_mem(busy_mem),
     .done_mem(done_mem),
     .aligned_mem(align_mem),
     .done_exec(done_exec),
     .is_exec(is_exec),
-    
+
     // Outputs to DATAPATH
     .W_R_mem(W_R_mem),
     .wordsize_mem(wordsize_mem),
@@ -233,18 +266,31 @@ FSM FSM_inst
     .trap(trap),
     .enable_pc(enable_pc)
     );
-    
+
     // Enable Assign
-    assign enable_mul = enable_exec; 
+    assign enable_mul = enable_exec;
     assign enable_alu = enable_exec;
-    
+
     // Done Assign
     assign done_exec = is_inst_util | is_inst_alu | (done_mul & is_inst_mul);
-    
+
     // Is exec assign
     assign is_exec = ~(&(code));
-    
+
     // Write to rd flag
     assign rdw_rsrn = (is_rd_util | is_rd_alu | done_mul | (is_rd_mem & done_mem)) & (enable_exec | enable_exec_mem);
+
+
+
+`ifdef RISCV_FORMAL
+
+    always @(posedge clk) begin
+
+
+
+    end
+
+`endif
+
 
 endmodule
