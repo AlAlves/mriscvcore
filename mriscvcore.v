@@ -12,17 +12,18 @@ module mriscvcore(
     input rstn,
 
     // AXI-4 LITE INTERFACE
+    // see: https://www.realdigital.org/doc/a9fee931f7a172423e1ba73f66ca4081
     input [31:0] Rdata,
     input ARready,
     input Rvalid,
     input AWready,
     input Wready,
     input Bvalid,
-    output [31:0] AWdata,
-    output [31:0] ARdata,
+    output [31:0] AWdata, // prob: AWaddr
+    output [31:0] ARdata, // prob: ARaddr
     output [31:0] Wdata,
     output ARvalid,
-    output RReady,
+    output Rready,
     output AWvalid,
     output Wvalid,
     output [2:0] ARprot,AWprot,
@@ -284,34 +285,70 @@ FSM FSM_inst
 
 
 `ifdef RISCV_FORMAL
+    parameter RESET_PC = 32'd8;
+
+    reg [31:0] 	 pc = RESET_PC;
 
     always @(posedge clk) begin
 
-        rvfi_valid <= ;
+        rvfi_valid <= Rvalid;
         rvfi_order <= rvfi_order + rvfi_valid;
-        rvfi_insn <= inst;
+
+        if (Rready) begin
+            rvfi_insn <= Rdata;
+        end
+
+        if (rvfi_valid) begin
+            rvfi_pc_rdata <= pc;
+        end
+
         rvfi_trap <= trap;
+
+        if (rvfi_valid) begin
+            rvfi_trap <= 1'b0;
+            pc <= rvfi_pc_wdata;
+        end
+
         rvfi_halt <= 1'b0;
         rvfi_intr <= 1'b0;
         rvfi_mode <= 2'd3;
         rvfi_ixl <= 2'd1;
 
-        rvfi_rs1_addr;
-        rvfi_rs2_addr;
-        rvfi_rs1_rdata;
-        rvfi_rs2_rdata;
-        rvfi_rd_addr;
-        rvfi_rd_wdata;
+        rvfi_rs1_addr = rs1i;
+        rvfi_rs2_addr = rs2i;
+        rvfi_rs1_rdata = rs1;
+        rvfi_rs2_rdata = rs2;
+        rvfi_rd_addr = rdi;
+        if (rvfi_valid & !(|rdi)) begin
+            rvfi_rd_wdata <= 32'd0;
+        end
+        else begin
+            rvfi_rd_wdata = rd;
+        end
 
-        rvfi_pc_rdata;
-        rvfi_pc_wdata;
+        rvfi_mem_addr; // TODO
+        rvfi_mem_rmask; // TODO
+        rvfi_mem_wmask; // TODO
+        rvfi_mem_rdata; // TODO
+        rvfi_mem_wdata; // TODO
 
-        rvfi_mem_addr;
-        rvfi_mem_rmask;
-        rvfi_mem_wmask;
-        rvfi_mem_rdata;
-        rvfi_mem_wdata;
+        // A VOIR
+        if (i_dbus_ack) begin
+           rvfi_mem_addr <= o_dbus_adr;
+           rvfi_mem_rmask <= o_dbus_we ? 4'b0000 : o_dbus_sel;
+           rvfi_mem_wmask <= o_dbus_we ? o_dbus_sel : 4'b0000;
+           rvfi_mem_rdata <= i_dbus_rdt;
+           rvfi_mem_wdata <= o_dbus_dat;
+        end
+        if (i_ibus_ack) begin
+           rvfi_mem_rmask <= 4'b0000;
+           rvfi_mem_wmask <= 4'b0000;
+        end
+        // FIN A VOIR
+    end
 
+    always @(ARdata) begin
+        rvfi_pc_wdata <= ARdata;
     end
 
 `endif
