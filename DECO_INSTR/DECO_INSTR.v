@@ -10,8 +10,8 @@ module DECO_INSTR(
     output reg [31:0] imm,
     output reg  [11:0] code,
     output reg [11:0] codif
-     );
-     
+    );
+
     reg [31:0] immr;
 
     always @(posedge clk) begin
@@ -38,11 +38,11 @@ module DECO_INSTR(
             rdi = inst[11:7];
             rs1i = {5{1'b0}};
             rs2i = {5{1'b0}};
-            codif = {{5{1'b0}} , inst[6:0]}; 
+            codif = {{5{1'b0}} , inst[6:0]};
         end
         7'b1100111: begin                             // jalr
-            if (inst[14:12] == 3'b000) begin 
-                immr = {{20{inst[31]}},inst[31:20]}; 
+            if (inst[14:12] == 3'b000) begin
+                immr = {{20{inst[31]}},inst[31:20]};
                 rs1i = inst[19:15];
                 rdi = inst[11:7];
                 rs2i = {5{1'b0}};
@@ -57,10 +57,10 @@ module DECO_INSTR(
                 rs2i = inst[24:20];
                 codif = {{2{1'b0}} ,inst[14:12] , inst[6:0]};
             end
-        end  
+        end
         7'b0000011: begin                             // lX
             if(((inst[14] == 1'b0)&&(inst[13:12] != 2'b11))||(inst[14:13] == 2'b10)) begin // lX
-                immr = {{20{inst[31]}},inst[31:20]}; 
+                immr = {{20{inst[31]}},inst[31:20]};
                 rs1i = inst[19:15];
                 rdi = inst[11:7];
                 rs2i = {5{1'b0}};
@@ -81,20 +81,20 @@ module DECO_INSTR(
                 rdi = inst[11:7];
                 rs1i = inst[19:15];
                 rs2i = {5{1'b0}};
-                immr = {{20{inst[31]}},inst[31:20]}; 
+                immr = {{20{inst[31]}},inst[31:20]};
                 codif = {2'b00 ,inst[14:12] , inst[6:0]};
             end else /*if (inst[13:12] == 2'b01)*/ begin // sXXi
                 rdi = inst[11:7];
                 rs1i = inst[19:15];
                 rs2i = {5{1'b0}};
-                immr = {{20{inst[31]}},inst[31:20]}; 
+                immr = {{20{inst[31]}},inst[31:20]};
                 codif = {1'b0, inst[30] ,inst[14:12] , inst[6:0]};  // Diferentiation between SRLI and SRAI is implicit on codif
             end
         end
         7'b0110011: begin // arith and logic
             if(({inst[31], inst[29:25]} == 6'b000000) || //add,sllst,sltu,xor,srl,or,and,sub,sra (inst[30] can be 1 or 0)
                ((inst[31:25] == 7'b0000001)&&(inst[14] == 1'b0)) // mul[h[u|su]] (do not support divs)
-               ) begin 
+               ) begin
                 rs2i = inst[24:20];
                 rs1i = inst[19:15];
                 rdi  = inst[11:7];
@@ -108,14 +108,14 @@ module DECO_INSTR(
                 rdi = inst[11:7];
                 rs1i = inst[19:15];        // WARN: This can be also zimm for CSRRX calls
                 rs2i = {5{1'b0}};
-                immr = {{20{1'b0}},inst[31:20]}; 
+                immr = {{20{1'b0}},inst[31:20]};
                 codif = {2'b0000 ,inst[20] , inst[6:0]};
             end else if(inst[14:12] != 3'b100) begin // CSRRX
                 // Quite the same as arith immr
                 rdi = inst[11:7];
                 rs1i = inst[19:15];        // WARN: This can be also zimm for CSRRX calls
                 rs2i = {5{1'b0}};
-                immr = {{20{1'b0}},inst[31:20]}; 
+                immr = {{20{1'b0}},inst[31:20]};
 
                 codif = {2'b00 ,inst[14:12] , inst[6:0]};
             end

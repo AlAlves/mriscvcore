@@ -30,26 +30,27 @@ module mriscvcore(
     output [3:0] Wstrb,
 
     `ifdef RISCV_FORMAL
-    	output reg        rvfi_valid,
-    	output reg [63:0] rvfi_order,
-    	output reg [31:0] rvfi_insn,
-    	output reg        rvfi_trap,
-    	output reg        rvfi_halt,
-    	output reg        rvfi_intr,
-    	output reg [ 1:0] rvfi_mode,
-    	output reg [ 4:0] rvfi_rs1_addr,
-    	output reg [ 4:0] rvfi_rs2_addr,
-    	output reg [31:0] rvfi_rs1_rdata,
-    	output reg [31:0] rvfi_rs2_rdata,
-    	output reg [ 4:0] rvfi_rd_addr,
-    	output reg [31:0] rvfi_rd_wdata,
-    	output reg [31:0] rvfi_pc_rdata,
-    	output reg [31:0] rvfi_pc_wdata,
-    	output reg [31:0] rvfi_mem_addr,
-    	output reg [ 3:0] rvfi_mem_rmask,
-    	output reg [ 3:0] rvfi_mem_wmask,
-    	output reg [31:0] rvfi_mem_rdata,
-    	output reg [31:0] rvfi_mem_wdata,
+        output reg 	      rvfi_valid = 1'b0,
+        output reg [63:0]  rvfi_order = 64'd0,
+        output reg [31:0]  rvfi_insn = 32'd0,
+        output reg 	      rvfi_trap = 1'b0,
+        output reg 	      rvfi_halt = 1'b0,
+        output reg 	      rvfi_intr = 1'b0,
+        output reg [1:0]   rvfi_mode = 2'b11,
+        output reg [1:0]   rvfi_ixl = 2'b01,
+        output reg [4:0]   rvfi_rs1_addr,
+        output reg [4:0]   rvfi_rs2_addr,
+        output reg [31:0]  rvfi_rs1_rdata,
+        output reg [31:0]  rvfi_rs2_rdata,
+        output reg [4:0]   rvfi_rd_addr,
+        output reg [31:0]  rvfi_rd_wdata,
+        output reg [31:0]  rvfi_pc_rdata,
+        output reg [31:0]  rvfi_pc_wdata,
+        output reg [31:0]  rvfi_mem_addr,
+        output reg [3:0]   rvfi_mem_rmask,
+        output reg [3:0]   rvfi_mem_wmask,
+        output reg [31:0]  rvfi_mem_rdata,
+        output reg [31:0]  rvfi_mem_wdata,
 
     	// output reg [63:0] rvfi_csr_mcycle_rmask,
     	// output reg [63:0] rvfi_csr_mcycle_wmask,
@@ -286,7 +287,30 @@ FSM FSM_inst
 
     always @(posedge clk) begin
 
+        rvfi_valid <= ;
+        rvfi_order <= rvfi_order + rvfi_valid;
+        rvfi_insn <= inst;
+        rvfi_trap <= trap;
+        rvfi_halt <= 1'b0;
+        rvfi_intr <= 1'b0;
+        rvfi_mode <= 2'd3;
+        rvfi_ixl <= 2'd1;
 
+        rvfi_rs1_addr;
+        rvfi_rs2_addr;
+        rvfi_rs1_rdata;
+        rvfi_rs2_rdata;
+        rvfi_rd_addr;
+        rvfi_rd_wdata;
+
+        rvfi_pc_rdata;
+        rvfi_pc_wdata;
+
+        rvfi_mem_addr;
+        rvfi_mem_rmask;
+        rvfi_mem_wmask;
+        rvfi_mem_rdata;
+        rvfi_mem_wdata;
 
     end
 
