@@ -28,7 +28,7 @@ module mriscvcore(
     output Wvalid,
     output [2:0] ARprot,AWprot,
     output Bready,
-    output [3:0] Wstrb,
+    output [3:0] Wstrb, // prob: AWcache
 
     `ifdef RISCV_FORMAL
         output reg 	      rvfi_valid = 1'b0,
@@ -89,6 +89,7 @@ wire flag;
 wire is_rd_mem;
 wire [1:0] W_R_mem, wordsize_mem;
 wire sign_mem, en_mem, busy_mem, done_mem, align_mem;
+wire
 //SIGNALS DECO INST
 wire enableDec;
 //SIGNALS MULT
@@ -100,6 +101,13 @@ wire is_inst_util, is_rd_util;
 //SIGNALS FSM
 wire is_exec;
 
+
+// implicitely declared
+wire rdw_rsrn; // REG
+wire enable_pc; // UTILITY & FSM
+wire done_exec; // FSM
+wire enable_exec; // FSM reg ?
+wire enable_exec_mem; // FSM
 
 // DATAPATH PHASE    *************************************************************
 
@@ -124,7 +132,7 @@ MEMORY_INTERFACE MEMORY_INTERFACE_inst(
     .ARdata(ARdata),
     .Wdata(Wdata),
     .ARvalid(ARvalid),
-    .RReady(RReady),
+    .Rready(Rready),
     .AWvalid(AWvalid),
     .Wvalid(Wvalid),
     .arprot(ARprot),
@@ -287,7 +295,7 @@ FSM FSM_inst
 `ifdef RISCV_FORMAL
     parameter RESET_PC = 32'd8;
 
-    reg [31:0] 	 pc = RESET_PC;
+    reg [31:0] 	 rvf_pc = RESET_PC;
 
     always @(posedge clk) begin
 
@@ -314,35 +322,25 @@ FSM FSM_inst
         rvfi_mode <= 2'd3;
         rvfi_ixl <= 2'd1;
 
-        rvfi_rs1_addr = rs1i;
-        rvfi_rs2_addr = rs2i;
-        rvfi_rs1_rdata = rs1;
-        rvfi_rs2_rdata = rs2;
-        rvfi_rd_addr = rdi;
+        rvfi_rs1_addr <= rs1i;
+        rvfi_rs2_addr <= rs2i;
+        rvfi_rs1_rdata <= rs1;
+        rvfi_rs2_rdata <= rs2;
+        rvfi_rd_addr <= rdi;
         if (rvfi_valid & !(|rdi)) begin
             rvfi_rd_wdata <= 32'd0;
         end
         else begin
-            rvfi_rd_wdata = rd;
+            rvfi_rd_wdata <= rd;
         end
-
-        rvfi_mem_addr; // TODO
-        rvfi_mem_rmask; // TODO
-        rvfi_mem_wmask; // TODO
-        rvfi_mem_rdata; // TODO
-        rvfi_mem_wdata; // TODO
 
         // A VOIR
-        if (i_dbus_ack) begin
-           rvfi_mem_addr <= o_dbus_adr;
-           rvfi_mem_rmask <= o_dbus_we ? 4'b0000 : o_dbus_sel;
-           rvfi_mem_wmask <= o_dbus_we ? o_dbus_sel : 4'b0000;
-           rvfi_mem_rdata <= i_dbus_rdt;
-           rvfi_mem_wdata <= o_dbus_dat;
-        end
-        if (i_ibus_ack) begin
-           rvfi_mem_rmask <= 4'b0000;
-           rvfi_mem_wmask <= 4'b0000;
+        if (Bvalid) begin
+           rvfi_mem_addr <= AWdata;
+           rvfi_mem_rmask <= 4'b1111;
+           rvfi_mem_wmask <= Wstrb;
+           rvfi_mem_rdata <= Rdata;
+           rvfi_mem_wdata <= Wdata;
         end
         // FIN A VOIR
     end

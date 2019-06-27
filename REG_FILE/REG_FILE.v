@@ -2,7 +2,7 @@
 /*
 REG_FILE by CKDUR.
 
-Instructions: 
+Instructions:
 1. Instance REG_FILE, not true_dpram_sclk
 2. Connect rd, rs1 and rs2 input/output to their respective buses.
 3. Connect rdi, rs1i, rs2i from DECO_INSTR (These are the indexes)
@@ -23,24 +23,24 @@ module true_dpram_sclk
 );
 	// Declare the RAM variable
 	reg [31:0] ram[31:0];
-	
+
 	// Port A
 	always @ (posedge clk)
 	begin
-		if (we_a) 
+		if (we_a)
 		begin
 			ram[addr_a] <= data_a;
 		end
 		q_a <= addr_a?ram[addr_a]:32'd0;		// Assign zero if index is zero because zero register
 		q_b <= addr_b?ram[addr_b]:32'd0;		// Assign zero if index is zero because zero register
 	end
-	
+
 endmodule
 
 module REG_FILE(
     input clk,
     input rst,
-    
+
 	input [31:0] rd,
 	input [4:0] rdi,
 	input rdw_rsrn,
@@ -49,19 +49,19 @@ module REG_FILE(
 	output [31:0] rs2,
 	input [4:0] rs2i
 	);
-	
+
 	wire [31:0] data_a;
 	wire [4:0] addr_a, addr_b;
 	wire we_a;
 	wire [31:0] q_a, q_b;
-	
+
 	assign data_a = rd;
 	assign addr_a = rdw_rsrn?rdi:rs1i;
 	assign addr_b = rs2i;
 	assign we_a = rdw_rsrn;
 	assign rs1 = q_a;
 	assign rs2 = q_b;
-	
+
 	true_dpram_sclk MEM_FILE
 (
 	.data_a(data_a),
@@ -69,5 +69,5 @@ module REG_FILE(
 	.we_a(we_a), .clk(clk), .rst(rst),
 	.q_a(q_a), .q_b(q_b)
 );
-	
+
 endmodule

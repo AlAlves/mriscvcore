@@ -5,7 +5,7 @@ module ALU #(
     parameter [ 0:0] REG_OUT = 1
     )
     (
-    
+
     input clk,
     input reset,
     input en, //habilita el dezplazamiento
@@ -14,16 +14,16 @@ module ALU #(
     input [31:0] rs2,
     input [31:0] imm,
     input [31:0] rs1,
-    
+
     output [31:0] rd,
     output reg cmp,
     output reg carry,
     output is_rd,
     output is_inst);
-    
+
     reg [31:0] oper2;
     reg [31:0] OUT_Alu_rd;
-    
+
     reg [31:0] OUT_Alu;
     wire [32:0] ADD_Alu;
     wire [31:0] SUB_Alu;
@@ -40,14 +40,16 @@ module ALU #(
     wire  BGEU_Alu;
     wire  sl_ok;
     wire [31:0] SRL_Alu;
-    wire [31:0] SLL_Alu; 
+    wire [31:0] SLL_Alu;
     wire [31:0] SRA_Alu;
-    
+
     reg [1:0] is_rd_reg;
     reg [1:0] is_inst_reg;
     reg en_reg;
     reg is_rd_nr, is_inst_nr;
-    
+
+    assign rd = is_rd_nr? OUT_Alu_rd:32'bz;
+
     always @(posedge clk) begin
         if(reset == 1'b0 || en == 1'b0) begin
             is_rd_reg <= 0;
@@ -59,9 +61,9 @@ module ALU #(
             en_reg <= en;
         end
     end
-    
+
     generate
-        if (REG_ALU & REG_OUT) begin  
+        if (REG_ALU & REG_OUT) begin
             assign is_rd = is_rd_nr & (&is_rd_reg);
             assign is_inst = is_inst_nr & (&is_inst_reg);
         end else if(REG_ALU | REG_OUT) begin
@@ -72,7 +74,7 @@ module ALU #(
             assign is_inst = is_inst_nr;
         end
     endgenerate
-    
+
     // WORKAROUND ABOUT 'oper2' and 'rd enable'
     always @* begin
         is_rd_nr = en;
@@ -83,10 +85,10 @@ module ALU #(
                                 end
             12'b000000110011:   begin // add
                                 oper2 = rs2;
-                                end                    
-            12'b100000110011:   begin //sub 
+                                end
+            12'b100000110011:   begin //sub
                                 oper2 = rs2;
-                                end                    
+                                end
             12'b001110010011:   begin //andi
                                 oper2 = imm;
                                 end
@@ -98,7 +100,7 @@ module ALU #(
                                 end
             12'b001000110011:   begin //xor
                                 oper2 = rs2;
-                                end                    
+                                end
             12'b001100010011:   begin //ori
                                 oper2 = imm;
                                 end
@@ -116,7 +118,7 @@ module ALU #(
                                 end
             12'b000110110011:   begin //sltu
                                 oper2 = rs2;
-                                end                    
+                                end
             12'b000001100011:   begin //beq
                                 oper2 = rs2;
                                 is_rd_nr = 1'b0;
@@ -150,7 +152,7 @@ module ALU #(
                                 oper2 = imm;
                                 is_rd_nr = sl_ok;
                                 is_inst_nr = sl_ok;
-                                end                    
+                                end
             12'b000010110011:   begin //sll
                                 oper2 = rs2;
                                 is_rd_nr = sl_ok;
@@ -178,7 +180,7 @@ module ALU #(
                                 end
         endcase
     end
-    
+
     // ALU
     // Granularity, each operation can be activated or deactivated
     ALU_add #(.REG_ALU(REG_ALU), .REG_OUT(REG_OUT)) ALU_add_inst
@@ -200,26 +202,26 @@ module ALU #(
     // Shifts
     ALU_sXXx #(.REG_ALU(REG_ALU), .REG_OUT(REG_OUT)) ALU_sXXx_inst
         (.clk(clk), .reset(reset), .rs1(rs1), .oper2(oper2), .en(en_reg), .SRL_Alu(SRL_Alu), .SLL_Alu(SLL_Alu), .SRA_Alu(SRA_Alu), .sl_ok(sl_ok));
-    
+
     // Always this result, there is no need to modularize this
     assign BNE_Alu = !BEQ_Alu;
     assign BGE_Alu = !BLT_Alu;
     assign BGEU_Alu = !BLTU_Alu;
-    
+
     // SLTx are actually the same as BLTx, so we do not modularize them
-    generate 
-        if (REG_ALU) begin            
-            always @(posedge clk) begin    
+    generate
+        if (REG_ALU) begin
+            always @(posedge clk) begin
                 if (!reset) begin
                     SLT_Alu <= 0;
                     SLTU_Alu <= 0;
-                end else begin 
+                end else begin
                     SLT_Alu <= {31'd0, BLT_Alu};
                     SLTU_Alu <= {31'd0, BLTU_Alu};
                 end
             end
         end else begin
-            always @* begin     
+            always @* begin
                 SLT_Alu = {31'd0, BLT_Alu};
                 SLTU_Alu = {31'd0, BLTU_Alu};
             end
@@ -228,7 +230,7 @@ module ALU #(
 
     // DEFINE FINAL OUTPUT
     always @* begin
-        
+
         case (decinst)
             12'b000000010011:   begin      // addi
                                 OUT_Alu = ADD_Alu[31:0];
@@ -239,12 +241,12 @@ module ALU #(
                                 OUT_Alu = ADD_Alu[31:0];
                                 carry = ADD_Alu[32];
                                 cmp = 0;
-                                end                    
-            12'b100000110011:    begin //sub 
+                                end
+            12'b100000110011:    begin //sub
                                 OUT_Alu = SUB_Alu;
                                 carry = 0;
                                 cmp = 0;
-                                end                    
+                                end
             12'b001110010011:   begin   //andi
                                 OUT_Alu = AND_Alu;
                                 carry = 0;
@@ -264,7 +266,7 @@ module ALU #(
                                 OUT_Alu = XOR_Alu;
                                 carry = 0;
                                 cmp = 0;
-                                end                    
+                                end
             12'b001100010011:   begin //ori
                                 OUT_Alu = OR_Alu;
                                 carry = 0;
@@ -294,7 +296,7 @@ module ALU #(
                                 OUT_Alu = SLTU_Alu;
                                 carry = 0;
                                 cmp = 0;
-                                end                    
+                                end
             12'b000001100011:   begin //beq
                                 cmp = BEQ_Alu;
                                 carry = 0;
@@ -334,7 +336,7 @@ module ALU #(
                                 OUT_Alu = SRL_Alu;
                                 carry = 0;
                                 cmp = 0;
-                                end                    
+                                end
             12'b000010110011:   begin  //sll pide rs2
                                 OUT_Alu = SLL_Alu;
                                 carry = 0;
@@ -362,25 +364,25 @@ module ALU #(
                                 end
         endcase
     end
-    
-    generate 
-        if (REG_ALU) begin            
-            always @(posedge clk) begin    
+
+    generate
+        if (REG_ALU) begin
+            always @(posedge clk) begin
                 if (!reset) begin
                     OUT_Alu_rd <= 0;
                 end else begin
-                    OUT_Alu_rd <= OUT_Alu; 
+                    OUT_Alu_rd <= OUT_Alu;
                 end
             end
         end else begin
-            always @(OUT_Alu) begin    
-                OUT_Alu_rd = OUT_Alu; 
+            always @(OUT_Alu) begin
+                OUT_Alu_rd = OUT_Alu;
             end
         end
     endgenerate
-    
-    assign rd = is_rd_nr?OUT_Alu_rd:32'bz;
-    
+
+    // assign rd = is_rd_nr? OUT_Alu_rd:32'bz;
+
 
 endmodule
 
@@ -390,7 +392,7 @@ module ALU_add
     parameter [ 0:0] REG_OUT = 1
     )
     (
-    
+
     input clk,
     input reset,
     input [31:0] rs1,
@@ -398,17 +400,17 @@ module ALU_add
     output reg [32:0] ADD_Alu
     );
 
-generate 
-        if (REG_ALU) begin            
-            always @(posedge clk) begin    
+generate
+        if (REG_ALU) begin
+            always @(posedge clk) begin
                 if (!reset) begin
                     ADD_Alu <= 0;
-                end else begin 
+                end else begin
                     ADD_Alu <= rs1 + oper2;
                 end
             end
         end else begin
-            always @* begin     
+            always @* begin
                 // ARITH
                 ADD_Alu = rs1 + oper2;
             end
@@ -422,7 +424,7 @@ module ALU_sub
     parameter [ 0:0] REG_OUT = 1
     )
     (
-    
+
     input clk,
     input reset,
     input [31:0] rs1,
@@ -430,18 +432,18 @@ module ALU_sub
     output reg [31:0] SUB_Alu
     );
 
-generate 
-        if (REG_ALU) begin            
-            always @(posedge clk) begin    
+generate
+        if (REG_ALU) begin
+            always @(posedge clk) begin
                 if (!reset) begin
                     SUB_Alu <= 0;
-                end else begin 
-                    SUB_Alu <= rs1 - oper2; 
+                end else begin
+                    SUB_Alu <= rs1 - oper2;
                 end
             end
         end else begin
-            always @* begin     
-                SUB_Alu = rs1 - oper2; 
+            always @* begin
+                SUB_Alu = rs1 - oper2;
             end
         end
     endgenerate
@@ -453,7 +455,7 @@ module ALU_and
     parameter [ 0:0] REG_OUT = 1
     )
     (
-    
+
     input clk,
     input reset,
     input [31:0] rs1,
@@ -461,17 +463,17 @@ module ALU_and
     output reg [31:0] AND_Alu
     );
 
-generate 
-        if (REG_ALU) begin            
-            always @(posedge clk) begin    
+generate
+        if (REG_ALU) begin
+            always @(posedge clk) begin
                 if (!reset) begin
                     AND_Alu <= 0;
-                end else begin 
+                end else begin
                     AND_Alu <= rs1 & oper2;
                 end
             end
         end else begin
-            always @* begin     
+            always @* begin
                 AND_Alu = rs1 & oper2;
             end
         end
@@ -484,7 +486,7 @@ module ALU_xor
     parameter [ 0:0] REG_OUT = 1
     )
     (
-    
+
     input clk,
     input reset,
     input [31:0] rs1,
@@ -492,18 +494,18 @@ module ALU_xor
     output reg [31:0] XOR_Alu
     );
 
-generate 
-        if (REG_ALU) begin            
-            always @(posedge clk) begin    
+generate
+        if (REG_ALU) begin
+            always @(posedge clk) begin
                 if (!reset) begin
-                    XOR_Alu <= 0;    
-                end else begin 
-                    XOR_Alu <= rs1 ^ oper2;    
+                    XOR_Alu <= 0;
+                end else begin
+                    XOR_Alu <= rs1 ^ oper2;
                 end
             end
         end else begin
-            always @* begin     
-                XOR_Alu = rs1 ^ oper2;    
+            always @* begin
+                XOR_Alu = rs1 ^ oper2;
             end
         end
     endgenerate
@@ -515,7 +517,7 @@ module ALU_or
     parameter [ 0:0] REG_OUT = 1
     )
     (
-    
+
     input clk,
     input reset,
     input [31:0] rs1,
@@ -523,17 +525,17 @@ module ALU_or
     output reg [31:0] OR_Alu
     );
 
-generate 
-        if (REG_ALU) begin            
-            always @(posedge clk) begin    
-                if (!reset) begin   
+generate
+        if (REG_ALU) begin
+            always @(posedge clk) begin
+                if (!reset) begin
                     OR_Alu  <= 0;
-                end else begin 
+                end else begin
                     OR_Alu  <= rs1 | oper2;
                 end
             end
         end else begin
-            always @* begin         
+            always @* begin
                 OR_Alu  = rs1 | oper2;
             end
         end
@@ -546,14 +548,14 @@ module ALU_beq
     parameter [ 0:0] REG_OUT = 1
     )
     (
-    
+
     input clk,
     input reset,
     input [31:0] rs1,
     input [31:0] oper2,
     output reg BEQ_Alu
-    ); 
-    always @* begin     
+    );
+    always @* begin
         BEQ_Alu = rs1 == oper2;
     end
 endmodule
@@ -564,32 +566,32 @@ module ALU_blt
     parameter [ 0:0] REG_OUT = 1
     )
     (
-    
+
     input clk,
     input reset,
     input [31:0] rs1,
     input [31:0] oper2,
     output reg BLT_Alu
-    );   
-    always @* begin     
+    );
+    always @* begin
         BLT_Alu = $signed(rs1) < $signed(oper2);
     end
 endmodule
 
-module ALU_bltu 
+module ALU_bltu
     #(
     parameter [ 0:0] REG_ALU = 1,
     parameter [ 0:0] REG_OUT = 1
     )
     (
-    
+
     input clk,
     input reset,
     input [31:0] rs1,
     input [31:0] oper2,
     output reg BLTU_Alu
-    );   
-    always @* begin     
+    );
+    always @* begin
         BLTU_Alu = rs1 < oper2;
     end
 endmodule
@@ -600,7 +602,7 @@ module ALU_sXXx
     parameter [ 0:0] REG_OUT = 1
     )
     (
-    
+
     input clk,
     input reset,
     input [31:0] rs1,
@@ -610,9 +612,9 @@ module ALU_sXXx
     output reg [31:0] SLL_Alu,
     output reg [31:0] SRA_Alu,
     output reg sl_ok
-    );   
+    );
     reg [4:0]  count;
-    always @(posedge clk) begin    
+    always @(posedge clk) begin
         if (!reset) begin
             SRL_Alu <= 0;
             SLL_Alu <= 0;
@@ -631,15 +633,15 @@ module ALU_sXXx
                 SLL_Alu <= SLL_Alu << 1;
                 SRA_Alu <= $signed(SRA_Alu) >>> 1;
                 count <= count - 1;
-            end else if (count ==0) begin 
+            end else if (count ==0) begin
                 sl_ok<=1'b1;
-            end 
+            end
         end else begin
             SRL_Alu <= rs1;
             SLL_Alu <= rs1;
             SRA_Alu <= rs1;
             count <= oper2[4:0];
             sl_ok <= 0;
-        end 
+        end
     end
 endmodule
