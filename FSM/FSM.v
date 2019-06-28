@@ -1,20 +1,20 @@
 `timescale 1 ns / 1 ps
 
-module FSM 
+module FSM
     (
     input clk,
     input reset,
-    
+
     // Auxiliars from DATAPATH
     input [11:0] codif,
-    
+
     // Inputs from DATAPATH
-    input busy_mem, 
+    input busy_mem,
     input done_mem,
     input aligned_mem,
     input done_exec,
     input is_exec,
-    
+
     // Outputs to DATAPATH
     output reg [1:0] W_R_mem,
     output [1:0] wordsize_mem,
@@ -25,7 +25,7 @@ module FSM
     output reg trap,
     output     enable_pc
     );
-    
+
     // MEMORY INTERFACE Auxiliar determination
     wire write_mem;
     wire is_mem;
@@ -35,7 +35,7 @@ module FSM
     assign sign_mem = ~codif[9];    // This is the only bit differs signed/unsigned
     assign wordsize_mem = codif[8:7];    // This is the only bit differs wordsize
     assign is_illisn = &codif || (codif == 12'b000011110011); // FIXME: Also is illegal if ebreak
-    
+
     // CHANGE PC Auxiliar determination
     reg enable_pc_aux, enable_pc_fsm;
     always @ (posedge clk) begin
@@ -45,24 +45,24 @@ module FSM
             enable_pc_aux <= enable_pc_fsm;
     end
     assign enable_pc = enable_pc_aux == 1'b0 && enable_pc_fsm == 1'b1 ? 1'b1 : 1'b0;
-    
+
     // ERROR Auxiliar determination
     wire err;
     assign err = ~aligned_mem;    // TODO: ILLISN
-    
+
     // Declare state register
     reg        [3:0] state;
-    
+
     // Declare states
     parameter S0_fetch = 0, S1_decode = 1, S2_exec = 2, S3_memory = 3, S4_trap = 4,
               SW0_fetch_wait = 5, SW3_mem_wait = 6;
-    
+
     // Output depends only on the state (transition)
     // Determine the next state (Moore state machine)
     always @ (posedge clk) begin
         if (reset == 1'b0) begin
             state <= S0_fetch;
-            
+
             en_mem <= 1'b0;
             W_R_mem <= 2'b00;
             enable_exec <= 1'b0;
@@ -87,15 +87,15 @@ module FSM
                             W_R_mem <= 2'b00;
                             en_mem <= 1'b0;
                         end
-                        
-                        
+
+
                     end
                     SW0_fetch_wait: begin
                         if (done_mem) begin
                             state <= S1_decode;
                             W_R_mem <= 2'b00;
                             en_mem <= 1'b0;
-                        end 
+                        end
                     end
                     S1_decode: begin
                         if ( is_illisn ) begin
@@ -135,7 +135,7 @@ module FSM
                     SW3_mem_wait: begin
                         if (done_mem) begin
                             state <= S0_fetch;
-                            
+
                             W_R_mem <= 2'b00;
                             enable_exec_mem <= 1'b0;
                             en_mem <= 1'b0;
@@ -148,6 +148,6 @@ module FSM
                     end
                 endcase
     end
-    
+
 
 endmodule

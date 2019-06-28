@@ -302,19 +302,19 @@ FSM FSM_inst
         rvfi_valid <= Rvalid;
         rvfi_order <= rvfi_order + rvfi_valid;
 
-        if (Rready) begin
+        if (Rready & Rvalid) begin
             rvfi_insn <= Rdata;
         end
 
-        if (rvfi_valid) begin
-            rvfi_pc_rdata <= pc;
+        if (Rvalid) begin
+            rvfi_pc_rdata <= rvf_pc;
         end
 
         rvfi_trap <= trap;
 
         if (rvfi_valid) begin
             rvfi_trap <= 1'b0;
-            pc <= rvfi_pc_wdata;
+            rvf_pc <= rvfi_pc_wdata;
         end
 
         rvfi_halt <= 1'b0;
@@ -322,12 +322,16 @@ FSM FSM_inst
         rvfi_mode <= 2'd3;
         rvfi_ixl <= 2'd1;
 
-        rvfi_rs1_addr <= rs1i;
-        rvfi_rs2_addr <= rs2i;
-        rvfi_rs1_rdata <= rs1;
-        rvfi_rs2_rdata <= rs2;
-        rvfi_rd_addr <= rdi;
-        if (rvfi_valid & !(|rdi)) begin
+        if (Rvalid) begin
+            rvfi_rs1_addr <= rs1i;
+            rvfi_rs2_addr <= rs2i;
+            rvfi_rd_addr <= rdi;
+        end
+
+        rvfi_rs1_rdata <= rs1i?rs1:32'd0;
+        rvfi_rs2_rdata <= rs2i?rs2:32'd0;
+
+        if (!(|rdi)) begin
             rvfi_rd_wdata <= 32'd0;
         end
         else begin
@@ -337,8 +341,8 @@ FSM FSM_inst
         // A VOIR
         if (Bvalid) begin
            rvfi_mem_addr <= AWdata;
-           rvfi_mem_rmask <= 4'b1111;
-           rvfi_mem_wmask <= Wstrb;
+           rvfi_mem_rmask <= 4'b0000;
+           rvfi_mem_wmask <= 4'b0000; //Wstrb;
            rvfi_mem_rdata <= Rdata;
            rvfi_mem_wdata <= Wdata;
         end
