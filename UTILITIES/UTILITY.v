@@ -13,6 +13,9 @@ module UTILITY(
     input           branch,
     output [31:0] rd,
     output [31:0] pc,
+    `ifdef RISCV_FORMAL
+    output [31:0] rvfi_pc_wdata,
+    `endif
     output reg    is_rd,
     output reg    is_inst);
 
@@ -111,5 +114,6 @@ module UTILITY(
         end
 
     assign pc = PC_N2;
+    assign rvfi_pc_wdata = PC_N;
 
 endmodule

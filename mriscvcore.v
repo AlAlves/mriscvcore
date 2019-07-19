@@ -11,22 +11,22 @@ module mriscvcore(
     input clk,
     input rstn,
 
-    // AXI-4 LITE INTERFACE
+    // AXI-4 LITE INTERFACE (MASTER)
     // see: https://www.realdigital.org/doc/a9fee931f7a172423e1ba73f66ca4081
     input [31:0] Rdata,
     input ARready,
-    input Rvalid,
+    input Rvalid,               //
     input AWready,
     input Wready,
-    input Bvalid,
-    output [31:0] AWdata, // prob: AWaddr
-    output [31:0] ARdata, // prob: ARaddr
+    input Bvalid,               // prob: Wack
+    output [31:0] AWdata,       // prob: AWaddr
+    output [31:0] ARdata,       // prob: ARaddr
     output [31:0] Wdata,
     output ARvalid,
     output Rready,
-    output AWvalid,
-    output Wvalid,
-    output [2:0] ARprot,AWprot,
+    output AWvalid,             //
+    output Wvalid,              //
+    output [2:0] ARprot,AWprot, // IDK
     output Bready,
     output [3:0] Wstrb, // prob: AWcache
 
@@ -237,6 +237,9 @@ UTILITY UTILITY_inst(
     .opcode(code),
     .imm(imm),
     .pc(pc),
+    `ifdef RISCV_FORMAL
+    .rvfi_pc_wdata(rvfi_pc_wdata),
+    `endif
     // FROM IRQ
     .irr_ret(pc_c),
     .irr_dest(pc_irq),
@@ -293,28 +296,28 @@ FSM FSM_inst
 
 
 `ifdef RISCV_FORMAL
-    parameter RESET_PC = 32'd8;
+    parameter RESET_PC = 32'd0;
 
     reg [31:0] 	 rvf_pc = RESET_PC;
 
     always @(posedge clk) begin
 
-        rvfi_valid <= Rvalid;
-        rvfi_order <= rvfi_order + rvfi_valid;
+        rvfi_valid <= enable_pc & done_mem;
+        rvfi_order <= rvfi_order + {63'd0, rvfi_valid};
 
-        if (Rready & Rvalid) begin
-            rvfi_insn <= Rdata;
+        if (W_R_mem == 2'b01) begin
+            rvfi_insn <= inst;
         end
 
-        if (Rvalid) begin
-            rvfi_pc_rdata <= rvf_pc;
-        end
+        // if (enable_pc & done_mem) begin
+        //     rvfi_pc_rdata <= rvf_pc;
+        // end
 
         rvfi_trap <= trap;
 
         if (rvfi_valid) begin
             rvfi_trap <= 1'b0;
-            rvf_pc <= rvfi_pc_wdata;
+            // rvf_pc <= rvfi_pc_wdata;
         end
 
         rvfi_halt <= 1'b0;
@@ -322,7 +325,7 @@ FSM FSM_inst
         rvfi_mode <= 2'd3;
         rvfi_ixl <= 2'd1;
 
-        if (Rvalid) begin
+        if (W_R_mem == 2'b01) begin
             rvfi_rs1_addr <= rs1i;
             rvfi_rs2_addr <= rs2i;
             rvfi_rd_addr <= rdi;
@@ -330,13 +333,7 @@ FSM FSM_inst
 
         rvfi_rs1_rdata <= rs1i?rs1:32'd0;
         rvfi_rs2_rdata <= rs2i?rs2:32'd0;
-
-        if (!(|rdi)) begin
-            rvfi_rd_wdata <= 32'd0;
-        end
-        else begin
-            rvfi_rd_wdata <= rd;
-        end
+        rvfi_rd_wdata <= rdi?rd:32'd0;
 
         // A VOIR
         if (Bvalid) begin
@@ -349,8 +346,8 @@ FSM FSM_inst
         // FIN A VOIR
     end
 
-    always @(ARdata) begin
-        rvfi_pc_wdata <= ARdata;
+    always @(pc) begin
+        rvfi_pc_rdata <= pc;
     end
 
 `endif

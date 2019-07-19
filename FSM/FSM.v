@@ -44,7 +44,7 @@ module FSM
         else
             enable_pc_aux <= enable_pc_fsm;
     end
-    assign enable_pc = enable_pc_aux == 1'b0 && enable_pc_fsm == 1'b1 ? 1'b1 : 1'b0;
+    assign enable_pc = enable_pc_aux == 1'b0 && enable_pc_fsm == 1'b1 ? 1'b1 : 1'b0; // WTFFFFFFFFFF
 
     // ERROR Auxiliar determination
     wire err;
