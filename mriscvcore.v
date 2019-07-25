@@ -300,14 +300,15 @@ FSM FSM_inst
 
     reg [31:0] 	 rvf_pc = RESET_PC;
 
+
     always @(posedge clk) begin
 
         rvfi_valid <= enable_pc & done_mem;
         rvfi_order <= rvfi_order + {63'd0, rvfi_valid};
 
-        if (W_R_mem == 2'b01) begin
+        //if (W_R_mem == 2'b01) begin
             rvfi_insn <= inst;
-        end
+        //end
 
         // if (enable_pc & done_mem) begin
         //     rvfi_pc_rdata <= rvf_pc;
@@ -325,15 +326,19 @@ FSM FSM_inst
         rvfi_mode <= 2'd3;
         rvfi_ixl <= 2'd1;
 
-        if (W_R_mem == 2'b01) begin
+        //if (W_R_mem == 2'b01) begin
             rvfi_rs1_addr <= rs1i;
             rvfi_rs2_addr <= rs2i;
             rvfi_rd_addr <= rdi;
-        end
 
-        rvfi_rs1_rdata <= rs1i?rs1:32'd0;
-        rvfi_rs2_rdata <= rs2i?rs2:32'd0;
-        rvfi_rd_wdata <= rdi?rd:32'd0;
+            rvfi_rs1_rdata <= rs1;
+            rvfi_rs2_rdata <= rs2;
+            rvfi_rd_wdata <= rd;
+
+            // rvfi_rs1_rdata <= rs1i?rs1:32'd0;
+            // rvfi_rs2_rdata <= rs2i?rs2:32'd0;
+            // rvfi_rd_wdata <= rdi?rd:32'd0;
+        //end
 
         // A VOIR
         if (Bvalid) begin
