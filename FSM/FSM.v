@@ -78,7 +78,7 @@ module FSM
                     S0_fetch: begin
                         if(!en_mem) begin
                             en_mem <= 1'b1;
-                            W_R_mem <= 2'b11;                // For instruction fetching
+                            W_R_mem <= 2'b11;                // For instruction fetching -- 01 au lieu de 11 ?
                         end else if (en_mem && !done_mem) begin
                             state <= SW0_fetch_wait;
                             en_mem <= 1'b0;

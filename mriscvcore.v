@@ -341,13 +341,31 @@ FSM FSM_inst
         //end
 
         // A VOIR
-        if (Bvalid) begin
-           rvfi_mem_addr <= AWdata;
-           rvfi_mem_rmask <= 4'b0000;
-           rvfi_mem_wmask <= 4'b0000; //Wstrb;
-           rvfi_mem_rdata <= Rdata;
-           rvfi_mem_wdata <= Wdata;
-        end
+        // if (Bvalid == Bvalid) begin
+        //    rvfi_mem_addr <= AWdata;
+        //    rvfi_mem_rmask <= Wstrb;
+        //    rvfi_mem_wmask <= Wstrb; //Wstrb;
+        //    rvfi_mem_rdata <= Rdata;
+        //    rvfi_mem_wdata <= Wdata;
+        // end
+        case (W_R_mem)
+            2'b00 : begin // lecture
+                rvfi_mem_rmask <= Wstrb;
+                rvfi_mem_wmask <= 4'b0000;
+            end
+            2'b01 : begin // écriture
+                rvfi_mem_rmask <= Wstrb;
+                rvfi_mem_wmask <= Wstrb;
+            end
+            default : begin
+                rvfi_mem_rmask <= 4'b0000;
+                rvfi_mem_wmask <= 4'b0000;
+            end
+        endcase
+
+        rvfi_mem_addr <= AWdata;
+        rvfi_mem_rdata <= Rdata;
+        rvfi_mem_wdata <= Wdata;
         // FIN A VOIR
     end
 

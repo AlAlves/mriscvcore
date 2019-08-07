@@ -76,14 +76,16 @@ module MEMORY_INTERFACE(
             case (state)
                 reposo : begin
                     // If reading or gathering instructions?
-                    if ( (W_R[1]==1'b1 || W_R==2'b01) && enable==1'b1 ) begin
+                    // replaced : if ( (W_R[1]==1'b1 || W_R==2'b01) && enable==1'b1 ) begin // WAAAAAAAAAAT
+                    if ( (W_R==2'b00 || W_R==2'b11) && (W_R[0]==W_R[1]) && enable==1'b1 ) begin
                         ARvalid    = 1'b1;     // Pre-issue the ARvalid
                         Rready = 1'b1;      // There is no problem if this is issued since before
                         if(ARready && Rvalid) begin en_read = 1'b1; busy = 1'b0; end     // In the same cycle sync read
                         else if(ARready && !Rvalid) begin nexstate = SR2; busy = 1'b1; end // Wait for Rvalid
                         else begin nexstate = SR1; busy = 1'b1; end
                     // If writing?
-                    end else if (W_R==2'b00 && enable==1'b1) begin
+                    // replaced : end else if (W_R==2'b00 && enable==1'b1) begin
+                    end else if (W_R==2'b01 && enable==1'b1) begin
                         AWvalid    = 1'b1;     // Pre-issue AWvalid
                         Wvalid = 1'b1;      // Pre-issue Wvalid
                         Bready = 1'b1;      // There is no problem if this is issued since before
@@ -223,7 +225,7 @@ module MEMORY_INTERFACE(
                 awprot = 3'b000;
                 AWdata = rs1+imm;
                 case (wordsize)
-                    2'b10  : begin
+                    2'b10  : begin // normalement 8 bit : ERROR ?
                         if(enable) align=(AWdata[1:0]==2'b00)? 1:0;
                         Wdataq=rs2;
                         Wstrbq=4'b1111;
